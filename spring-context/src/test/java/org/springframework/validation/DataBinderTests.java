@@ -819,6 +819,52 @@ class DataBinderTests {
 		assertThat(binder.getBindingResult().getSuppressedFields()).containsExactly("someMap[key3]", "someMap[key4]");
 	}
 
+	@Test
+	void bindingWithDisallowedFieldsIsLocaleIndependentForCapitalizedFieldName() throws BindException {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// Turkish default locale lowercases 'I' to dotless i (U+0131)
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			OptionalHolder bean = new OptionalHolder();
+			DataBinder binder = new DataBinder(bean);
+			binder.setDisallowedFields("id");
+
+			MutablePropertyValues pvs = new MutablePropertyValues();
+			pvs.add("Id", "1");
+			binder.bind(pvs);
+			binder.close();
+
+			assertThat(bean.getId()).as("did not change id").isNull();
+			assertThat(binder.getBindingResult().getSuppressedFields()).containsExactly("Id");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
+	void bindingWithDisallowedFieldsIsLocaleIndependentForUppercasePattern() throws BindException {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// Turkish default locale lowercases 'I' to dotless i (U+0131)
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			Book book = new Book();
+			DataBinder binder = new DataBinder(book);
+			binder.setDisallowedFields("ISBN");
+
+			MutablePropertyValues pvs = new MutablePropertyValues();
+			pvs.add("iSBN", "6789");
+			binder.bind(pvs);
+			binder.close();
+
+			assertThat(book.getISBN()).as("did not change ISBN").isNull();
+			assertThat(binder.getBindingResult().getSuppressedFields()).containsExactly("iSBN");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
 	/**
 	 * Tests for required field, both null, non-existing and empty strings.
 	 */
